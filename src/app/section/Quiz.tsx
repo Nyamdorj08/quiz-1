@@ -75,7 +75,11 @@ export default function QuizPage() {
       <div className="absolute inset-0 bg-[#3967F0]/60 backdrop-blur-[3px]" />
 
       {/* Logo */}
-      <img src="/nemo.svg" alt="logo" className="absolute top-6 left-6 w-20" />
+      <img
+        src="/nemo.svg"
+        alt="logo"
+        className="absolute bottom-6 right-6 w-20"
+      />
 
       <div className="relative w-full max-w-xl">
         <AnimatePresence mode="wait">
@@ -89,7 +93,7 @@ export default function QuizPage() {
             >
               <h1 className="text-3xl font-bold text-white">Quiz дууслаа!</h1>
 
-              <p className="text-white text-xl">{name} 👏</p>
+              <p className="text-white text-xl">"{name}"</p>
 
               <p className="text-white text-2xl">
                 Таны хариулт амжилттай бүртгэгдлээ
@@ -103,9 +107,9 @@ export default function QuizPage() {
               animate={{ opacity: 1, y: 0 }}
               className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl p-10 text-center space-y-6"
             >
-              <h1 className="text-2xl font-bold text-white">Quiz эхлүүлэх</h1>
+              <h1 className="text-3xl font-bold text-white">Quiz эхлүүлэх</h1>
 
-              <p className="text-white/80">Амжилт хүсье 🚀</p>
+              <p className="text-white text-xl">Амжилт хүсье </p>
 
               <input
                 value={name}

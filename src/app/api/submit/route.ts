@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     // 2. бүх асуултад хариулсан эсэх
-    const TOTAL_QUESTIONS = 20;
+    const TOTAL_QUESTIONS = 10;
 
     if (answers.length !== TOTAL_QUESTIONS) {
       return Response.json(
