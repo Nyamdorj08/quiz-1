@@ -15,11 +15,12 @@ export default function QuizPage() {
   const [finished, setFinished] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState<number | null>(null);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const currentQuestion = quizData.questions[currentIndex];
 
-  // select answer
+  // сонголт хийх
   const selectAnswer = (questionId: string, optionId: string) => {
     setAnswers((prev) => {
       const filtered = prev.filter((a) => a.questionId !== questionId);
@@ -27,95 +28,98 @@ export default function QuizPage() {
     });
   };
 
-  //  next question
+  // дараагийн асуулт
   const nextQuestion = () => {
     if (currentIndex < quizData.questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     }
   };
 
-  //  submit
+  // submit
   const submitQuiz = async () => {
     try {
+      setLoading(true);
+
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, name: name.trim() }),
       });
 
-      const data = await res.json();
+      // 🔥 ERROR HANDLE
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Алдаа гарлаа");
+        return;
+      }
 
-      setScore(data.score);
       setFinished(true);
     } catch (err) {
       console.error(err);
-      alert("Алдаа гарлаа");
+      alert("Серверийн алдаа");
+    } finally {
+      setLoading(false);
     }
   };
 
   const selected = answers.find((a) => a.questionId === currentQuestion?.id);
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-xl">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 relative bg-cover bg-center"
+      style={{ backgroundImage: "url('/quiz.png')" }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-[#3967F0]/60 backdrop-blur-[3px]" />
+
+      {/* Logo */}
+      <img src="/nemo.svg" alt="logo" className="absolute top-6 left-6 w-20" />
+
+      <div className="relative w-full max-w-xl">
         <AnimatePresence mode="wait">
-          {/*  RESULT */}
+          {/* RESULT */}
           {finished ? (
             <motion.div
               key="result"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="bg-white rounded-2xl shadow-lg p-10 text-center space-y-6"
+              className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl p-10 text-center space-y-6"
             >
-              <h1 className="text-3xl font-bold text-gray-800">
-                🎉 Quiz дууслаа!
-              </h1>
+              <h1 className="text-3xl font-bold text-white">Quiz дууслаа!</h1>
 
-              <p className="text-gray-600">Quiz-д оролцсонд баярлалаа 🙌</p>
+              <p className="text-white text-xl">{name} 👏</p>
 
-              <div className="text-4xl font-bold">
-                {score} / {quizData.questions.length}
-              </div>
-
-              <p className="text-lg text-gray-500">
-                {Math.round(((score || 0) / quizData.questions.length) * 100)}%
+              <p className="text-white text-2xl">
+                Таны хариулт амжилттай бүртгэгдлээ
               </p>
-
-              <Button
-                onClick={() => window.location.reload()}
-                className="w-full h-14 text-lg"
-              >
-                Дахин эхлэх
-              </Button>
             </motion.div>
           ) : !started ? (
-            /*  INTRO */
+            /* INTRO */
             <motion.div
               key="intro"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -40 }}
-              className="bg-white rounded-2xl shadow-lg p-10 text-center space-y-6"
+              className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl p-10 text-center space-y-6"
             >
-              <h1 className="text-3xl font-bold text-gray-800">Quiz эхлэх</h1>
+              <h1 className="text-2xl font-bold text-white">Quiz эхлүүлэх</h1>
 
-              <p className="text-gray-600 leading-relaxed">
-                Танд бид 20 сонирхолтой асуулт бэлдлээ.
-                <br />
-                Нэг асуултад хариулсны дараа буцах боломжгүй тул анхааралтай
-                хариулна уу.
-                <br />
-                Танд амжилт хүсье 🚀
-              </p>
+              <p className="text-white/80">Амжилт хүсье 🚀</p>
+
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Нэрээ оруулна уу"
+                className="w-full p-3 rounded-xl bg-white/80 text-black outline-none"
+              />
 
               <Button
+                disabled={!name.trim()}
                 onClick={() => setStarted(true)}
-                className="w-full h-14 text-lg"
+                className="w-full h-14 bg-white text-[#3967F0]"
               >
-                Start Quiz
+                Эхлүүлэх
               </Button>
             </motion.div>
           ) : (
@@ -124,22 +128,21 @@ export default function QuizPage() {
               key="quiz"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl p-8"
             >
               {/* Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-lg font-semibold text-gray-700">Quiz</h1>
-
-                <span className="text-sm text-gray-500 font-medium">
+              <div className="flex justify-between items-center mb-6 text-white">
+                <h1 className="font-semibold text-xl">{name}</h1>
+                <span>
                   {currentIndex + 1} / {quizData.questions.length}
                 </span>
               </div>
 
               {/* Progress */}
-              <div className="mb-8">
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="mb-6">
+                <div className="w-full h-2 bg-white/20 rounded-full">
                   <div
-                    className="h-full bg-black transition-all duration-300"
+                    className="h-full bg-white transition-all duration-300"
                     style={{
                       width: `${
                         ((currentIndex + 1) / quizData.questions.length) * 100
@@ -150,35 +153,31 @@ export default function QuizPage() {
               </div>
 
               {/* Question */}
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                  {currentQuestion.text}
-                </h2>
+              <h2 className="text-2xl font-bold text-white mb-6">
+                {currentQuestion.text}
+              </h2>
 
-                <div className="space-y-3">
-                  {currentQuestion.options.map((opt, i) => {
-                    const isSelected = selected?.optionId === opt.id;
+              {/* Options */}
+              <div className="space-y-3">
+                {currentQuestion.options.map((opt, i) => {
+                  const isSelected = selected?.optionId === opt.id;
 
-                    return (
-                      <button
-                        key={opt.id}
-                        onClick={() => selectAnswer(currentQuestion.id, opt.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition
-                          ${
-                            isSelected
-                              ? "border-black bg-black text-white"
-                              : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="w-8 h-8 flex items-center justify-center rounded-full border text-sm font-medium">
-                          {String.fromCharCode(65 + i)}
-                        </div>
-
-                        <span className="text-left text-base">{opt.text}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => selectAnswer(currentQuestion.id, opt.id)}
+                      className={`w-full p-4 rounded-xl border flex gap-4 transition
+                        ${
+                          isSelected
+                            ? "bg-white text-[#3967F0]"
+                            : "text-white border-white/30 hover:bg-white/10"
+                        }`}
+                    >
+                      <span>{String.fromCharCode(65 + i)}.</span>
+                      <span>{opt.text}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Actions */}
@@ -186,18 +185,27 @@ export default function QuizPage() {
                 {currentIndex === quizData.questions.length - 1 ? (
                   <Button
                     onClick={submitQuiz}
-                    disabled={answers.length !== quizData.questions.length}
-                    className="w-full h-14 text-lg"
+                    disabled={
+                      answers.length !== quizData.questions.length || loading
+                    }
+                    className="w-full h-14 bg-white text-[#3967F0] flex items-center justify-center gap-2"
                   >
-                    Submit
+                    {loading ? (
+                      <>
+                        <span className="w-5 h-5 border-2 border-[#3967F0] border-t-transparent rounded-full animate-spin"></span>
+                        Илгээж байна...
+                      </>
+                    ) : (
+                      "Илгээх"
+                    )}
                   </Button>
                 ) : (
                   <Button
                     disabled={!selected}
                     onClick={nextQuestion}
-                    className="w-full h-14 text-lg"
+                    className="w-full h-14 bg-white text-[#3967F0]"
                   >
-                    Next →
+                    Дараах →
                   </Button>
                 )}
               </div>

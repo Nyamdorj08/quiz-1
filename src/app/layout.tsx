@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Roboto } from "next/font/google";
+
+const roboto = Roboto({
+  subsets: ["cyrillic", "latin"],
+});
 
 export const metadata: Metadata = {
   title: "Quiz App",
@@ -13,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className={`antialiased ${roboto.className}`}>{children}</body>
     </html>
   );
 }

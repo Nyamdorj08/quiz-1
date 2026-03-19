@@ -3,18 +3,24 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const { answers, name } = body;
 
     // 1. basic validation
-    if (!body.answers || !Array.isArray(body.answers)) {
+    if (!answers || !Array.isArray(answers) || !name?.trim()) {
+      return Response.json({ error: "Invalid data" }, { status: 400 });
+    }
+
+    // 2. бүх асуултад хариулсан эсэх
+    const TOTAL_QUESTIONS = 20;
+
+    if (answers.length !== TOTAL_QUESTIONS) {
       return Response.json(
-        { error: "Invalid answers format" },
+        { error: "All questions must be answered" },
         { status: 400 },
       );
     }
 
-    const answers = body.answers;
-
-    // 2. duplicate question хамгаалах
+    // 3. duplicate хамгаалах
     const uniqueQuestions = new Set(answers.map((a: any) => a.questionId));
 
     if (uniqueQuestions.size !== answers.length) {
@@ -24,7 +30,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. бүх option DB дээр байгаа эсэх шалгах
+    // 4. optionId format шалгах
+    if (answers.some((a: any) => !a.questionId || !a.optionId)) {
+      return Response.json({ error: "Invalid answer format" }, { status: 400 });
+    }
+
+    // 5. DB дээр option байгаа эсэх
     const optionIds = answers.map((a: any) => a.optionId);
 
     const options = await prisma.option.findMany({
@@ -33,6 +44,14 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log(
+      "OPTIONS",
+      options,
+      options.length,
+      optionIds,
+      optionIds.length,
+    );
+
     if (options.length !== answers.length) {
       return Response.json(
         { error: "Invalid option detected" },
@@ -40,23 +59,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. score бодох
+    // 6. score бодох
     let score = 0;
 
     for (const option of options) {
       if (option.isCorrect) score++;
     }
 
-    // 5. result үүсгэх
+    // 7. result үүсгэх
     const result = await prisma.result.create({
       data: {
-        userId: "user_1", // дараа auth холбож болно
+        userId: "user_1",
         quizId: "quiz_1",
         score,
+        name: name.trim(),
       },
     });
 
-    // 6. answer хадгалах
+    // 8. answers хадгалах
     await prisma.answer.createMany({
       data: answers.map((a: any) => ({
         resultId: result.id,
@@ -67,11 +87,10 @@ export async function POST(req: Request) {
 
     return Response.json({
       success: true,
-      score,
       total: answers.length,
     });
   } catch (error) {
-    console.error(error);
+    console.error("SUBMIT ERROR:", error);
 
     return Response.json({ error: "Server error" }, { status: 500 });
   }
