@@ -11,15 +11,16 @@ model Quiz {
   id        String     @id @default(cuid())
   title     String
   questions Question[]
+  results   Result[]
 }
 
 model Question {
-  id        String    @id @default(cuid())
-  text      String
-  quizId    String
-  quiz      Quiz      @relation(fields: [quizId], references: [id])
-  options   Option[]
-  answers   Answer[]   // 🔥 нэмсэн
+  id      String   @id @default(cuid())
+  text    String
+  quizId  String
+  quiz    Quiz     @relation(fields: [quizId], references: [id])
+  options Option[]
+  answers Answer[]
 }
 
 model Option {
@@ -28,7 +29,7 @@ model Option {
   isCorrect  Boolean
   questionId String
   question   Question @relation(fields: [questionId], references: [id])
-  answers    Answer[] // 🔥 нэмсэн
+  answers    Answer[]
 }
 
 model Result {
@@ -36,13 +37,15 @@ model Result {
   userId    String
   quizId    String
   score     Int
-  name      String   // 🔥 name хадгална
+  name      String
   answers   Answer[]
   createdAt DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id]) // 🔥 нэмсэн
 }
 
 model Answer {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   resultId   String
   questionId String
   optionId   String
@@ -50,4 +53,6 @@ model Answer {
   result   Result   @relation(fields: [resultId], references: [id])
   question Question @relation(fields: [questionId], references: [id])
   option   Option   @relation(fields: [optionId], references: [id])
+
+  @@unique([resultId, questionId]) // 🔥 duplicate хамгаалалт
 }
