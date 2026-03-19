@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"; // 🔥 build crash fix
+
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -30,8 +32,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. optionId format шалгах
-    if (answers.some((a: any) => !a.questionId || !a.optionId)) {
+    // 4. answer format шалгах
+    if (
+      answers.some(
+        (a: any) =>
+          typeof a.questionId !== "string" || typeof a.optionId !== "string",
+      )
+    ) {
       return Response.json({ error: "Invalid answer format" }, { status: 400 });
     }
 
@@ -44,13 +51,9 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(
-      "OPTIONS",
-      options,
-      options.length,
-      optionIds,
-      optionIds.length,
-    );
+    // 🔥 DEBUG (production дээр бас хэрэгтэй)
+    console.log("DB OPTIONS:", options.length);
+    console.log("CLIENT OPTIONS:", optionIds.length);
 
     if (options.length !== answers.length) {
       return Response.json(
@@ -60,11 +63,7 @@ export async function POST(req: Request) {
     }
 
     // 6. score бодох
-    let score = 0;
-
-    for (const option of options) {
-      if (option.isCorrect) score++;
-    }
+    const score = options.filter((opt) => opt.isCorrect).length;
 
     // 7. result үүсгэх
     const result = await prisma.result.create({
@@ -87,11 +86,15 @@ export async function POST(req: Request) {
 
     return Response.json({
       success: true,
+      score,
       total: answers.length,
     });
-  } catch (error) {
-    console.error("SUBMIT ERROR:", error);
+  } catch (error: any) {
+    console.error("🔥 SUBMIT ERROR:", error?.message || error);
 
-    return Response.json({ error: "Server error" }, { status: 500 });
+    return Response.json(
+      { error: "Server error", details: error?.message },
+      { status: 500 },
+    );
   }
 }
